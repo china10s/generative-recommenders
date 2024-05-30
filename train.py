@@ -119,8 +119,8 @@ def train_fn(
     dataset = get_reco_dataset(
         dataset_name=dataset_name,
         max_sequence_length=max_sequence_length,
-        chronological=True,
-        positional_sampling_ratio=positional_sampling_ratio,
+        chronological=True, # 是否按时间戳逆向排序
+        positional_sampling_ratio=positional_sampling_ratio, #抽样比例
     )
 
     train_data_sampler, train_data_loader = create_data_loader(
@@ -129,7 +129,7 @@ def train_fn(
         world_size=world_size,
         rank=rank,
         shuffle=True,
-        drop_last=world_size > 1,
+        drop_last=world_size > 1, #丢弃最后一个batch
     )
     eval_data_sampler, eval_data_loader = create_data_loader(
         dataset.eval_dataset,
@@ -142,7 +142,7 @@ def train_fn(
 
     model_debug_str = main_module
     if embedding_module_type == "local":
-        embedding_module: EmbeddingModule = LocalEmbeddingModule(
+        embedding_module: EmbeddingModule = LocalEmbeddingModule( # Item的embedding 模块
             num_items=dataset.max_item_id,
             item_embedding_dim=item_embedding_dim,
         )
@@ -150,7 +150,7 @@ def train_fn(
         raise ValueError(f"Unknown embedding_module_type {embedding_module_type}")
     model_debug_str += f"-{embedding_module.debug_str()}"
 
-    interaction_module, interaction_module_debug_str = get_similarity_function(
+    interaction_module, interaction_module_debug_str = get_similarity_function( # 相似性计算模块
         module_type=interaction_module_type,
         query_embedding_dim=item_embedding_dim,
         item_embedding_dim=item_embedding_dim,
@@ -158,7 +158,7 @@ def train_fn(
 
     assert user_embedding_norm == "l2_norm" or user_embedding_norm == "layer_norm", \
         f"Not implemented for {user_embedding_norm}"
-    output_postproc_module = (
+    output_postproc_module = ( # 输出l2norm之后的item预测结果
         L2NormEmbeddingPostprocessor(
             embedding_dim=item_embedding_dim,
             eps=1e-6,
@@ -167,7 +167,7 @@ def train_fn(
             eps=1e-6,
         )
     )
-    input_preproc_module = LearnablePositionalEmbeddingInputFeaturesPreprocessor(
+    input_preproc_module = LearnablePositionalEmbeddingInputFeaturesPreprocessor( #数据序列化输入
         max_sequence_len=dataset.max_sequence_length + gr_output_length + 1,
         embedding_dim=item_embedding_dim,
         dropout_rate=dropout_rate,
