@@ -66,24 +66,23 @@ class LearnablePositionalEmbeddingInputFeaturesPreprocessor(InputFeaturesPreproc
 
     def forward(
         self,
-        past_lengths: torch.Tensor,
-        past_ids: torch.Tensor,
-        past_embeddings: torch.Tensor, 
+        past_lengths: torch.Tensor, 
+        past_ids: torch.Tensor, # 标识是否相关item id，0/1 [B, N]
+        past_embeddings: torch.Tensor, # 用户历史行为序列[B, N, D]
         past_payloads: Dict[str, torch.Tensor],
     ) -> torch.Tensor:
         B, N = past_ids.size()
         D = past_embeddings.size(-1)
 
         user_embeddings = (
-            past_embeddings * (self._embedding_dim ** 0.5)
-            + self._pos_emb(torch.arange(N, device=past_ids.device).unsqueeze(0).repeat(B, 1))
+            past_embeddings * (self._embedding_dim ** 0.5) # 减少训练过程中的数据波动，增加稳定性 [B, N, D]
+            + self._pos_emb(torch.arange(N, device=past_ids.device).unsqueeze(0).repeat(B, 1)) # 增加位置编码emb [B, N, D]
         )
         user_embeddings = self._emb_dropout(user_embeddings)
 
         valid_mask = (past_ids != 0).unsqueeze(-1).float()  # [B, N, 1]
-        user_embeddings *= valid_mask
+        user_embeddings *= valid_mask # [B, N, D]
         return past_lengths, user_embeddings, valid_mask
-
     
 class LearnablePositionalEmbeddingRatedInputFeaturesPreprocessor(InputFeaturesPreprocessorModule):
 

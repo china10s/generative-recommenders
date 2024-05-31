@@ -167,14 +167,14 @@ def train_fn(
             eps=1e-6,
         )
     )
-    input_preproc_module = LearnablePositionalEmbeddingInputFeaturesPreprocessor( #数据序列化输入
-        max_sequence_len=dataset.max_sequence_length + gr_output_length + 1,
+    input_preproc_module = LearnablePositionalEmbeddingInputFeaturesPreprocessor( #单个用户的数据转成，带位置编码的序列化embedding
+        max_sequence_len=dataset.max_sequence_length + gr_output_length + 1, # 作为用户行为的位置编码长度
         embedding_dim=item_embedding_dim,
         dropout_rate=dropout_rate,
     )
 
     model = get_sequential_encoder(
-        module_type=main_module,
+        module_type=main_module, # 主模型类型： HSTU、SASRec
         max_sequence_length=dataset.max_sequence_length,
         max_output_length=gr_output_length + 1,
         embedding_module=embedding_module,
