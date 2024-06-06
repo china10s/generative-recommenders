@@ -206,7 +206,7 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
             # In this case, for all the following code, x, u, v, q, k become restricted to
             # [delta_x_offsets[0], :].
             assert cache is not None
-            x = x[delta_x_offsets[0], :]
+            x = x[delta_x_offsets[0], :] # 按照delta_x_offsets的offset序列，顺序取出x中对应的embedding
             cached_v, cached_q, cached_k, cached_outputs = cache
 
         normed_x = self._norm_input(x)
@@ -217,7 +217,7 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
                 batched_mm_output = F.silu(batched_mm_output)
             elif self._linear_activation == "none":
                 batched_mm_output = batched_mm_output
-            u, v, q, k = torch.split(
+            u, v, q, k = torch.split( # 将大矩阵切分成 uvqk 四个矩阵
                 batched_mm_output,
                 [self._linear_dim * self._num_heads, self._linear_dim * self._num_heads, self._attention_dim * self._num_heads, self._attention_dim * self._num_heads],
                 dim=1,
@@ -489,7 +489,7 @@ class HSTU(GeneralizedInteractionModule):
         # causal forward, w/ +1 for padding.
         self.register_buffer(
             "_attn_mask",
-            torch.triu(
+            torch.triu( # 生成一个上三角的mask矩阵
                 torch.ones((self._max_sequence_length + max_output_len, self._max_sequence_length + max_output_len), dtype=torch.bool),
                 diagonal=1,
             )
@@ -551,7 +551,7 @@ class HSTU(GeneralizedInteractionModule):
         float_dtype = user_embeddings.dtype
         user_embeddings, cached_states = self._hstu(
             x=user_embeddings,
-            x_offsets=torch.ops.fbgemm.asynchronous_complete_cumsum(past_lengths),
+            x_offsets=torch.ops.fbgemm.asynchronous_complete_cumsum(past_lengths), # 计算累积sum值，作为x取值的offset
             all_timestamps=(
                 past_payloads[TIMESTAMPS_KEY]
                 if TIMESTAMPS_KEY in past_payloads else None
