@@ -194,8 +194,8 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
             all_timestamps: optional (B, N) x int64.
             invalid_attn_mask: (B, N, N) x float, each element in {0, 1}.
             delta_x_offsets: optional 2-tuple ((B,) x int32, (B,) x int32).
-                For the 1st element in the tuple, each element is in [0, x_offsets[-1]). For the
-                2nd element in the tuple, each element is in [0, N).
+                For the 1st element in the tuple, each element is in [0, x_offsets[-1]). For the # 记录batch位置offset
+                2nd element in the tuple, each element is in [0, N). # 记录item行为的位置offset
             cache: Optional 4-tuple of (v, padded_q, padded_k, output) from prior runs,
                 where all except padded_q, padded_k are jagged.
         Returns:
@@ -226,7 +226,7 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
             raise ValueError(f"Unknown self._linear_config {self._linear_config}")
 
         if delta_x_offsets is not None:
-            v = cached_v.index_copy_(dim=0, index=delta_x_offsets[0], source=v)
+            v = cached_v.index_copy_(dim=0, index=delta_x_offsets[0], source=v) # 将V矩阵中需要的信息拷贝出来，放入cached_v中
 
         B: int = x_offsets.size(0) - 1
         if self._normalization == "rel_bias" or self._normalization == "hstu_rel_bias":
@@ -240,24 +240,24 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
                     dim=0, index=flattened_offsets, source=k,
                 ).view(B, n, -1)
             else:
-                padded_q = torch.ops.fbgemm.jagged_to_padded_dense(
+                padded_q = torch.ops.fbgemm.jagged_to_padded_dense( #将q、k矩阵对齐到统一的长度，同时考虑到offset
                     values=q, offsets=[x_offsets], max_lengths=[n], padding_value=0.0
                 )
                 padded_k = torch.ops.fbgemm.jagged_to_padded_dense(
                     values=k, offsets=[x_offsets], max_lengths=[n], padding_value=0.0
                 )
 
-            qk_attn = torch.einsum(
+            qk_attn = torch.einsum( # 计算q、k矩阵相乘
                 "bnhd,bmhd->bhnm",
                 padded_q.view(B, n, self._num_heads, self._attention_dim),
                 padded_k.view(B, n, self._num_heads, self._attention_dim),
             )
             if all_timestamps is not None:
                 qk_attn = qk_attn + self._rel_attn_bias(all_timestamps).unsqueeze(1)
-            qk_attn = F.silu(qk_attn) / n
-            qk_attn = qk_attn * invalid_attn_mask.unsqueeze(0).unsqueeze(0)
-            attn_output = torch.ops.fbgemm.dense_to_jagged(
-                torch.einsum(
+            qk_attn = F.silu(qk_attn) / n # 使用激活函数silu替代softmax
+            qk_attn = qk_attn * invalid_attn_mask.unsqueeze(0).unsqueeze(0) #叠加无效attn的mask
+            attn_output = torch.ops.fbgemm.dense_to_jagged( # attn结果输出
+                torch.einsum( # 乘以value矩阵
                     "bhnm,bmhd->bnhd",
                     qk_attn,
                     torch.ops.fbgemm.jagged_to_padded_dense(v, [x_offsets], [n]).reshape(B, n, self._num_heads, self._linear_dim)
@@ -286,7 +286,7 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
             qk_attn = torch.einsum("bnd,bmd->bnm", padded_q, padded_k)
             if self._rel_attn_bias is not None:
                 qk_attn = qk_attn + self._rel_attn_bias(all_timestamps)
-            qk_attn = F.softmax(qk_attn / math.sqrt(self._attention_dim), dim=-1)
+            qk_attn = F.softmax(qk_attn / math.sqrt(self._attention_dim), dim=-1) # 以transformer标准的softmax来进行attn计算
             qk_attn = qk_attn * invalid_attn_mask
             attn_output = torch.ops.fbgemm.dense_to_jagged(
                 torch.bmm(qk_attn, torch.ops.fbgemm.jagged_to_padded_dense(v, [x_offsets], [n])),
@@ -296,9 +296,9 @@ class SequentialTransductionUnitJagged(torch.nn.Module):
             raise ValueError(f"Unknown normalization method {self._normalization}")
 
         attn_output = attn_output if delta_x_offsets is None else attn_output[delta_x_offsets[0], :]
-        if self._concat_ua:
+        if self._concat_ua: 
             a = self._norm_attn_output(attn_output)
-            o_input = torch.cat([u, a, u * a], dim=-1)
+            o_input = torch.cat([u, a, u * a], dim=-1) # 将attn结果拼接上user embedding，以及attn与user embedding按位相乘的结果（类似于wide & deep）
         else:
             o_input = u * self._norm_attn_output(attn_output)
 
@@ -550,7 +550,7 @@ class HSTU(GeneralizedInteractionModule):
 
         float_dtype = user_embeddings.dtype
         user_embeddings, cached_states = self._hstu(
-            x=user_embeddings,
+            x=user_embeddings, # 将整个序列emb按照顺序拼接起来，构成一个长的emb
             x_offsets=torch.ops.fbgemm.asynchronous_complete_cumsum(past_lengths), # 计算累积sum值，作为x取值的offset
             all_timestamps=(
                 past_payloads[TIMESTAMPS_KEY]
