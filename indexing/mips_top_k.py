@@ -49,7 +49,7 @@ class MIPSBruteForceTopK(MIPSTopKModule):
             item_ids=item_ids,
         )
         del self._item_embeddings
-        self._item_embeddings_t: torch.Tensor = item_embeddings.permute(2, 1, 0).squeeze(2)
+        self._item_embeddings_t: torch.Tensor = item_embeddings.permute(2, 1, 0).squeeze(2) # 将原本(1, X, D) 三维Tensor转换为(D,X)
 
     def forward(
         self,
@@ -67,7 +67,7 @@ class MIPSBruteForceTopK(MIPSTopKModule):
             Tuple of (top_k_scores x float, top_k_ids x int), both of shape (B, K,)
         """
         # (B, X,)
-        all_logits = torch.mm(query_embeddings, self._item_embeddings_t)
+        all_logits = torch.mm(query_embeddings, self._item_embeddings_t) # (B, N, D) mm (D, X) = (B, N, X)
         top_k_logits, top_k_indices = torch.topk(
             all_logits, dim=1, k=k, sorted=sorted, largest=True,
         )  # (B, k,)

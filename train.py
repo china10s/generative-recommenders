@@ -268,21 +268,21 @@ def train_fn(
             train_data_sampler.set_epoch(epoch)
         if eval_data_sampler is not None:
             eval_data_sampler.set_epoch(epoch)
-        model.train()
+        model.train() #每个epoch的训练
         for row in iter(train_data_loader):
             seq_features, target_ids, target_ratings = movielens_seq_features_from_row(
                 row, device=device, max_output_length=gr_output_length + 1,
             )
 
-            if (batch_id % eval_interval) == 0:
-                model.eval()
+            if (batch_id % eval_interval) == 0: # 每100个batch，评估一次指标
+                model.eval() # 从训练模式，转换到预测模式
 
                 seq_features, target_ids, target_ratings = movielens_seq_features_from_row(
                     row,
                     device=device,
                     max_output_length=gr_output_length + 1,
                 )
-                eval_state = get_eval_state(
+                eval_state = get_eval_state( # 获取
                     model=model.module,
                     all_item_ids=dataset.all_item_ids,
                     negatives_sampler=negatives_sampler,
@@ -360,7 +360,7 @@ def train_fn(
             else:
                 lr = learning_rate
 
-            if (batch_id % eval_interval) == 0:
+            if (batch_id % eval_interval) == 0: #每100个batch，计算一次loss
                 logging.info(f" rank: {rank}, batch-stat (train): step {batch_id} "
                              f"(epoch {epoch} in {time.time() - last_training_time:.2f}s): {loss:.6f}")
                 last_training_time = time.time()

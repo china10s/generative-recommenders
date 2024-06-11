@@ -46,8 +46,8 @@ def get_eval_state(
     float_dtype: Optional[torch.dtype] = None,
 ) -> EvalState:
     # Exhaustively eval all items (incl. seen ids).
-    eval_negatives_ids = torch.as_tensor(all_item_ids).to(device).unsqueeze(0)  # [1, X]
-    eval_negative_embeddings = negatives_sampler.normalize_embeddings(
+    eval_negatives_ids = torch.as_tensor(all_item_ids).to(device).unsqueeze(0)  # [1, X] # 直接从全部item中进行负采样
+    eval_negative_embeddings = negatives_sampler.normalize_embeddings( # 随机负采样的emb
         model.get_item_embeddings(eval_negatives_ids)
     )
     if float_dtype is not None:
@@ -96,7 +96,7 @@ def eval_metrics_v2_from_tensors(
             print(f"missing target_id {target_id}")
 
     # computes ro- part exactly once.
-    shared_input_embeddings = model.encode(
+    shared_input_embeddings = model.encode( # 获取序列特征编码后结果
         past_lengths=seq_features.past_lengths,
         past_ids=seq_features.past_ids,
         past_embeddings=model.get_item_embeddings(seq_features.past_ids),
@@ -106,7 +106,7 @@ def eval_metrics_v2_from_tensors(
         shared_input_embeddings = shared_input_embeddings.to(dtype)
 
     MAX_K = 2500
-    k = min(MAX_K, eval_state.candidate_index.ids.size(1))
+    k = min(MAX_K, eval_state.candidate_index.ids.size(1)) # 限制最大不能超过2500
     user_max_batch_size = user_max_batch_size or shared_input_embeddings.size(0)
     num_batches = (
         (shared_input_embeddings.size(0) + user_max_batch_size - 1) // user_max_batch_size

@@ -105,7 +105,7 @@ class LocalNegativesSampler(NegativesSampler):
         """
         # assert torch.max(torch.abs(self._item_emb(positive_ids) - positive_embeddings)) < 1e-4
         output_shape = positive_ids.size() + (num_to_sample,)
-        sampled_offsets = torch.randint(
+        sampled_offsets = torch.randint( # 生成随机数用来进行随机负采样
             low=0, high=self._num_items,
             size=output_shape,
             dtype=positive_ids.dtype,

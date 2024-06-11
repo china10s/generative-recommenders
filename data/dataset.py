@@ -111,10 +111,10 @@ class DatasetV2(torch.utils.data.Dataset):
             assert len(y) == target_len
             return y
 
-        historical_ids = movie_history[1:]
+        historical_ids = movie_history[1:] # 历史行为item（排除首位最近一次行为item作为target）
         historical_ratings = movie_history_ratings[1:]
         historical_timestamps = movie_timestamps[1:]
-        target_ids = movie_history[0]
+        target_ids = movie_history[0] # 最近一次行为作为item
         target_ratings = movie_history_ratings[0]
         target_timestamps = movie_timestamps[0]
         if self._chronological:
