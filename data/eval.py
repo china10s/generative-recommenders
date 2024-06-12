@@ -96,7 +96,7 @@ def eval_metrics_v2_from_tensors(
             print(f"missing target_id {target_id}")
 
     # computes ro- part exactly once.
-    shared_input_embeddings = model.encode( # 获取序列特征最后一个item，编码后的结果
+    shared_input_embeddings = model.encode( # 获取序列特征最后一个item编码后的结果
         past_lengths=seq_features.past_lengths,
         past_ids=seq_features.past_ids,
         past_embeddings=model.get_item_embeddings(seq_features.past_ids),
@@ -114,9 +114,9 @@ def eval_metrics_v2_from_tensors(
     eval_top_k_ids_all = []
     eval_top_k_prs_all = []
     for mb in range(num_batches):
-        eval_top_k_ids, eval_top_k_prs, _ = eval_state.candidate_index.get_top_k_outputs(
-            query_embeddings=shared_input_embeddings[mb * user_max_batch_size: (mb + 1) * user_max_batch_size, ...],
-            top_k_module=eval_state.top_k_module,
+        eval_top_k_ids, eval_top_k_prs, _ = eval_state.candidate_index.get_top_k_outputs( # 从全量item矩阵中，寻找与行为序列最后一个item相似度最高的topK个item
+            query_embeddings=shared_input_embeddings[mb * user_max_batch_size: (mb + 1) * user_max_batch_size, ...], # 行为序列中，最后一个item
+            top_k_module=eval_state.top_k_module, # 向量内积的方式计算topK
             k=k,
             invalid_ids=seq_features.past_ids[
                 mb * user_max_batch_size: (mb + 1) * user_max_batch_size, :
@@ -136,9 +136,9 @@ def eval_metrics_v2_from_tensors(
     assert eval_top_k_ids.size(1) == k
     _, eval_rank_indices = torch.max(
         torch.cat(
-            [eval_top_k_ids, target_ids],
+            [eval_top_k_ids, target_ids], # [B ,K] concat [B ,1] = [B ,K+1]
             dim=1,
-        ) == target_ids,
+        ) == target_ids, # element wise维度比对，输出当前element是否是targetItem
         dim=1,
     )
     eval_ranks = torch.where(eval_rank_indices == k, MAX_K + 1, eval_rank_indices + 1)

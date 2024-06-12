@@ -289,7 +289,7 @@ def train_fn(
                     top_k_module_fn=lambda item_embeddings, item_ids: get_top_k_module(
                         top_k_method=top_k_method,
                         model=model.module,
-                        item_embeddings=item_embeddings,
+                        item_embeddings=item_embeddings, # 输出全部item作为候选集
                         item_ids=item_ids,
                     ),
                     device=device,
@@ -311,7 +311,7 @@ def train_fn(
 
             # TODO: consider separating this out?
             B, N = seq_features.past_ids.shape
-            seq_features.past_ids.scatter_(
+            seq_features.past_ids.scatter_( # 进行矩阵内容替换
                 dim=1, index=seq_features.past_lengths.view(-1, 1), src=target_ids.view(-1, 1),
             )
 
