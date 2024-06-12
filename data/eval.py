@@ -96,7 +96,7 @@ def eval_metrics_v2_from_tensors(
             print(f"missing target_id {target_id}")
 
     # computes ro- part exactly once.
-    shared_input_embeddings = model.encode( # 获取序列特征编码后结果
+    shared_input_embeddings = model.encode( # 获取序列特征最后一个item，编码后的结果
         past_lengths=seq_features.past_lengths,
         past_ids=seq_features.past_ids,
         past_embeddings=model.get_item_embeddings(seq_features.past_ids),

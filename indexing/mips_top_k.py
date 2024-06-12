@@ -67,8 +67,8 @@ class MIPSBruteForceTopK(MIPSTopKModule):
             Tuple of (top_k_scores x float, top_k_ids x int), both of shape (B, K,)
         """
         # (B, X,)
-        all_logits = torch.mm(query_embeddings, self._item_embeddings_t) # (B, N, D) mm (D, X) = (B, N, X)
-        top_k_logits, top_k_indices = torch.topk(
+        all_logits = torch.mm(query_embeddings, self._item_embeddings_t) # (B, D) mm (D, X) = (B, X)
+        top_k_logits, top_k_indices = torch.topk( # 从全局item中，找出与行为中，最后（近）一个item最相关的topK个item
             all_logits, dim=1, k=k, sorted=sorted, largest=True,
         )  # (B, k,)
         return top_k_logits, self._item_ids.squeeze(0)[top_k_indices]

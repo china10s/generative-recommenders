@@ -72,7 +72,7 @@ def get_current_embeddings(
         (B, D,) x float, where [i, :] == encoded_embeddings[i, lengths[i] - 1, :]
     """
     B, N, D = encoded_embeddings.size()
-    flattened_offsets = (
+    flattened_offsets = ( # 取出序列行为中，最后一个item的emb
         (lengths - 1)
         + torch.arange(
             start=0, end=B, step=1, dtype=lengths.dtype, device=lengths.device

@@ -623,7 +623,7 @@ class HSTU(GeneralizedInteractionModule):
             cache=cache,
             return_cache_states=return_cache_states,
         )   # [B, N, D]
-        current_embeddings = get_current_embeddings(lengths=past_lengths, encoded_embeddings=encoded_seq_embeddings)
+        current_embeddings = get_current_embeddings(lengths=past_lengths, encoded_embeddings=encoded_seq_embeddings) # 取出行为序列行为中，最后一个item的emb
         if return_cache_states:
             return current_embeddings, cache_states
         else:
