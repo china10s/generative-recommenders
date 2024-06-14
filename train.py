@@ -282,7 +282,7 @@ def train_fn(
                     device=device,
                     max_output_length=gr_output_length + 1,
                 )
-                eval_state = get_eval_state( # 获取
+                eval_state = get_eval_state( # 获取模型评估所需环境变量
                     model=model.module,
                     all_item_ids=dataset.all_item_ids,
                     negatives_sampler=negatives_sampler,
@@ -295,7 +295,7 @@ def train_fn(
                     device=device,
                     float_dtype=torch.bfloat16 if main_module_bf16 else None,
                 )
-                eval_dict = eval_metrics_v2_from_tensors(
+                eval_dict = eval_metrics_v2_from_tensors( # 开展模型评估
                     eval_state, model.module, seq_features, target_ids=target_ids, target_ratings=target_ratings,
                     user_max_batch_size=eval_user_max_batch_size,
                     dtype=torch.bfloat16 if main_module_bf16 else None,
@@ -311,22 +311,22 @@ def train_fn(
 
             # TODO: consider separating this out?
             B, N = seq_features.past_ids.shape
-            seq_features.past_ids.scatter_( # 进行矩阵内容替换
+            seq_features.past_ids.scatter_( # 进行矩阵内容替换，主要是用来在之前剔除最近一次行为的item（作为训练的目标Y）后，做了最长长度截断，在这里又把最近一次行为的item加回去了。
                 dim=1, index=seq_features.past_lengths.view(-1, 1), src=target_ids.view(-1, 1),
             )
 
-            opt.zero_grad()
+            opt.zero_grad() # 清除掉节点里，上一次训练留下的梯度
             input_embeddings = model.module.get_item_embeddings(seq_features.past_ids)
-            seq_embeddings = model(
+            seq_embeddings = model( # 将序列信息输入模型，输出针对这个序列的emb结果
                 past_lengths=seq_features.past_lengths,
                 past_ids=seq_features.past_ids,
                 past_embeddings=input_embeddings,
                 past_payloads=seq_features.past_payloads,
             )  # [B, X]
 
-            supervision_ids = seq_features.past_ids
+            supervision_ids = seq_features.past_ids # 历史行为序列
 
-            if sampling_strategy == "in-batch":
+            if sampling_strategy == "in-batch":  # 增加负采样item
                 # get_item_embeddings currently assume 1-d tensor.
                 in_batch_ids = supervision_ids.view(-1)
                 negatives_sampler.process_batch(
@@ -337,8 +337,8 @@ def train_fn(
             else:
                 negatives_sampler._item_emb = model.module._embedding_module._item_emb
 
-            ar_mask = supervision_ids[:, 1:] != 0
-            loss = ar_loss(
+            ar_mask = supervision_ids[:, 1:] != 0 # 去除无效id
+            loss = ar_loss( # 损失函数计算loss
                 lengths=seq_features.past_lengths,  # [B],
                 output_embeddings=seq_embeddings[:, :-1, :],  # [B, N-1, D]
                 supervision_ids=supervision_ids[:, 1:],  # [B, N-1]
