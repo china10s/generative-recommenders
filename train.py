@@ -316,8 +316,8 @@ def train_fn(
             )
 
             opt.zero_grad() # 清除掉节点里，上一次训练留下的梯度
-            input_embeddings = model.module.get_item_embeddings(seq_features.past_ids)
-            seq_embeddings = model( # 将序列信息输入模型，输出针对这个序列的emb结果
+            input_embeddings = model.module.get_item_embeddings(seq_features.past_ids) # 原始输入
+            seq_embeddings = model( # 将序列信息输入模型，输出这个序列的结果emb
                 past_lengths=seq_features.past_lengths,
                 past_ids=seq_features.past_ids,
                 past_embeddings=input_embeddings,
@@ -338,7 +338,7 @@ def train_fn(
                 negatives_sampler._item_emb = model.module._embedding_module._item_emb
 
             ar_mask = supervision_ids[:, 1:] != 0 # 去除无效id
-            loss = ar_loss( # 损失函数计算loss
+            loss = ar_loss( # 向量内积损失函数计算loss
                 lengths=seq_features.past_lengths,  # [B],
                 output_embeddings=seq_embeddings[:, :-1, :],  # [B, N-1, D]
                 supervision_ids=supervision_ids[:, 1:],  # [B, N-1]

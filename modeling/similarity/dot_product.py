@@ -46,7 +46,7 @@ class DotProductSimilarity(NDPModule):
         """
         del item_ids
 
-        if item_embeddings.size(0) == 1:
+        if item_embeddings.size(0) == 1: # 一维向量，直接计算点乘内积，作为向量相似度
             # [B, D] x ([1, X, D] -> [D, X]) => [B, X]
             return torch.mm(input_embeddings, item_embeddings.squeeze(0).t()), {}  # [B, X]
         elif input_embeddings.size(0) != item_embeddings.size(0):

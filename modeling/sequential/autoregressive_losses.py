@@ -472,11 +472,11 @@ class SampledSoftmaxLoss(AutoregressiveLoss):
         assert supervision_ids.size() == supervision_embeddings.size()[:-1]
         assert supervision_ids.size() == supervision_weights.size()
 
-        sampled_ids, sampled_negative_embeddings = negatives_sampler(
+        sampled_ids, sampled_negative_embeddings = negatives_sampler( # 负采样一批数据
             positive_ids=supervision_ids,
             num_to_sample=self._num_to_sample,
         )
-        positive_embeddings = negatives_sampler.normalize_embeddings(supervision_embeddings)
+        positive_embeddings = negatives_sampler.normalize_embeddings(supervision_embeddings) # 计算输入向量的‘L2 normalize’
         positive_logits = self._model.interaction(
             input_embeddings=output_embeddings,  # [B, D] = [N', D]
             target_ids=supervision_ids.unsqueeze(1),  # [N', 1]
@@ -523,8 +523,8 @@ class SampledSoftmaxLoss(AutoregressiveLoss):
         """
         assert output_embeddings.size() == supervision_embeddings.size()
         assert supervision_ids.size() == supervision_embeddings.size()[:-1]
-        jagged_id_offsets = torch.ops.fbgemm.asynchronous_complete_cumsum(lengths)
-        jagged_supervision_ids = torch.ops.fbgemm.dense_to_jagged(
+        jagged_id_offsets = torch.ops.fbgemm.asynchronous_complete_cumsum(lengths) # 根据每个样本的length，获取其offset
+        jagged_supervision_ids = torch.ops.fbgemm.dense_to_jagged( # 从concat在一起的dense向量，按样本拆分成行向量
             supervision_ids.unsqueeze(-1).float(),
             [jagged_id_offsets]
         )[0].squeeze(1).long()
