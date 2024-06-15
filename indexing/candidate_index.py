@@ -138,7 +138,7 @@ class CandidateIndex(object):
         k: int,
         top_k_module: TopKModule,
         invalid_ids: Optional[torch.Tensor],
-        r: int = 1,
+        r: int = 1, 
         return_embeddings: bool = False,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
