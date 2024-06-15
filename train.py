@@ -346,7 +346,7 @@ def train_fn(
                 supervision_weights=ar_mask.float(),
                 negatives_sampler=negatives_sampler,
             )  # [B, N]
-            if rank == 0:
+            if rank == 0: 
                 writer.add_scalar("losses/ar_loss", loss, batch_id)
 
             loss.backward()

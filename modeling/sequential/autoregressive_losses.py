@@ -477,7 +477,7 @@ class SampledSoftmaxLoss(AutoregressiveLoss):
             num_to_sample=self._num_to_sample,
         )
         positive_embeddings = negatives_sampler.normalize_embeddings(supervision_embeddings) # 计算输入向量的‘L2 normalize’
-        positive_logits = self._model.interaction(
+        positive_logits = self._model.interaction( # 计算模型输出结果emb与目标item的emb之间的点积，作为相似度计算方法
             input_embeddings=output_embeddings,  # [B, D] = [N', D]
             target_ids=supervision_ids.unsqueeze(1),  # [N', 1]
             target_embeddings=positive_embeddings.unsqueeze(1),  # [N', D] -> [N', 1, D]
@@ -486,7 +486,7 @@ class SampledSoftmaxLoss(AutoregressiveLoss):
             input_embeddings=output_embeddings,  # [N', D]
             target_ids=sampled_ids,  # [N', R]
             target_embeddings=sampled_negative_embeddings,  # [N', R, D]
-        )  # [N', R]  # [0]
+        )  # [N', R]  # [0] 
         sampled_negatives_logits = torch.where(
             supervision_ids.unsqueeze(1) == sampled_ids,  # [N', R]
             -5e4,
