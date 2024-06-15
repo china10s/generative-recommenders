@@ -67,7 +67,7 @@ def hstu_encoder(
     activation_checkpoint: bool,
     verbose: bool,
     num_blocks: int = 2,
-    num_heads: int = 1,
+    num_heads: int = 1, 
     dqk: int = 64,
     dv: int = 64,
     linear_dropout_rate: float = 0.0,
